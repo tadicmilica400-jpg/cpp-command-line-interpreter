@@ -1,66 +1,66 @@
 # C++ Command-Line Interpreter
 
-An interactive command-line interpreter developed as C++17 coursework.
+## Project overview
 
-The project implements command parsing, command construction, execution, pipelines and file redirection using the C++ standard library.
+An interactive C++17 command interpreter implementing a small, deliberately restricted shell-like language. The project separates parsing, command construction, stream routing and command execution, and uses polymorphic command classes connected through standard C++ streams.
 
-## Features
+## Academic context
 
-- Built-in commands: `echo`, `date`, `time`, `touch`, `wc`, `prompt`, `truncate`, `rm`, `tr`, `head` and `batch`.
-- Command pipelines.
-- Input and output redirection, including append mode.
-- Batch command execution.
-- Error handling.
+Developed as university coursework to practise object-oriented design, parsing, resource ownership, file I/O and composition of processing stages. It is not intended to be POSIX-compatible and does not start arbitrary operating-system processes.
 
-The interpreter uses its own command grammar and is not intended to be a complete POSIX shell.
+## Main functionality
 
-## Requirements
+- Built-in commands: `echo`, `date`, `time`, `touch`, `wc`, `prompt`, `truncate`, `rm`, `tr`, `head` and `batch`
+- Pipelines using `|`
+- Input redirection and output redirection in overwrite or append mode
+- Batch-file parsing and execution
+- Validation and command-specific error handling
+- Interactive prompt with end-of-file termination
 
-- A compiler supporting C++17.
-- No external libraries.
+## Technical implementation
 
-## Build and Run
+The interpreter uses a staged design:
 
-### Linux or macOS
+1. `Parser` converts a command line into `ParsedCommand` objects, including nested pipeline and batch representations.
+2. `CommandBuilder` maps the parsed representation to concrete command objects.
+3. `Interpreter` selects standard or file streams and invokes the command.
+4. `PipeCommand` connects commands with in-memory string streams; `BatchCommand` parses and executes commands from a file.
 
-With a C++17 compiler available:
+`Command` is an abstract base class with a stream-oriented `execute(std::istream&, std::ostream&)` interface. Concrete commands can therefore read from the console, a redirected file or a preceding pipeline stage without changing their core logic. `std::unique_ptr` is used for ownership of commands and temporary streams.
+
+## Build and usage
+
+Requirements: a C++17 compiler and the standard library only.
 
 ```bash
 g++ -std=c++17 *.cpp -o interpreter
 ./interpreter
 ```
 
-### Windows
+On Windows, create a C++ project containing all `.cpp` and `.h` files and enable C++17. End interactive input with `Ctrl+D` on Linux/macOS or `Ctrl+Z`, then Enter, in a Windows console.
 
-Create a C++ project in your IDE, add all `.cpp` and `.h` files, and enable C++17.
+File-related commands operate in the current working directory. Test destructive commands such as `rm` and `truncate` only in a disposable directory.
 
-Build the project and run the resulting executable.
+## Repository structure
 
-### Exit
-
-- Linux/macOS: press `Ctrl+D`.
-- Windows console: press `Ctrl+Z`, then `Enter`.
-
-File commands operate on the current working directory. Use a disposable directory when testing commands that create, modify or delete files.
-
-## Project Structure
-
-| Files | Purpose |
+| Component | Purpose |
 | --- | --- |
-| `CommandLineInterpreter.cpp` | Application entry point |
-| `Parser.h` / `Parser.cpp` | Command parsing |
-| `CommandBuilder.h` / `CommandBuilder.cpp` | Command construction |
-| `Interpreter.h` / `Interpreter.cpp` | Execution and stream handling |
-| `Command.h` / `Command.cpp` | Base command abstraction |
-| `PipeCommand.h` / `PipeCommand.cpp` | Pipeline execution |
-| `BatchCommand.h` / `BatchCommand.cpp` | Batch execution |
-| Individual command classes | Built-in command implementations |
-| `Error.h` / `Error.cpp` | Error handling |
+| `CommandLineInterpreter.cpp` | Program entry point |
+| `Parser.*` | Grammar handling and parsed-command representation |
+| `CommandBuilder.*` | Construction of concrete and composite commands |
+| `Interpreter.*` | Read-evaluate loop and redirection setup |
+| `Command.*` | Abstract command interface |
+| `PipeCommand.*` | Pipeline composition and intermediate streams |
+| `BatchCommand.*` | Batch-file execution |
+| Individual `*Command.*` files | Built-in command implementations |
+| `Error.*` | Input and command validation |
 
-## Portability
+## Limitations and future improvements
 
-The portfolio version includes adjustments for missing headers, filename casing and platform-specific local-time functions.
+- The grammar is custom and intentionally much smaller than a system shell; quoting, escaping, environment expansion, background jobs and external executables are outside scope.
+- Pipelines are evaluated in-process using buffers rather than concurrent OS pipes.
+- The repository has no build system, automated tests or usage transcript.
+- Compilation could not be independently reproduced during this audit because a C++ compiler was not available in the review environment.
+- Priority improvements are a CMake configuration, parser/unit tests, integration tests for pipelines and redirection, and a formal grammar with documented edge cases.
 
-## Verification Status
 
-No automated behavior tests are included. Compilation and runtime behavior have not been independently verified for this portfolio version.
